@@ -60,15 +60,23 @@ truck_loop(Id, Capacity, Remaining) ->
         {load_package, {PackageId, Size}, _} when Size =< Remaining -> % Package fits in the truck
             io:format("~sTruck ~p: Loading package ~p (size: ~p). Remaining capacity: ~p~s~n", 
                         [?RED, Id, PackageId, Size, Remaining - Size, ?RESET]),
-            truck_loop(Id, Capacity, Remaining - Size);
-        
+            % Check if the truck is now full
+            case Remaining - Size of
+                0 -> % Truck is full after this package
+                    io:format("~sTruck ~p is full. Replacing it...~s~n", [?RED, Id, ?RESET]),
+                    truck_loop(Id, Capacity, Capacity);
+                _ -> % Truck still has capacity
+                    truck_loop(Id, Capacity, Remaining - Size)
+            end;
+
         {load_package, {PackageId, Size}, ConveyorPid} when Size > Remaining -> % Package too large for the truck
             io:format("~sTruck ~p rejected package ~p (size: ~p). Not enough capacity.~s~n", 
                       [?RED, Id, PackageId, Size, ?RESET]),
             ConveyorPid ! {package_rejected, {PackageId, Size}}, % Send package back to the Belt
             io:format("~sTruck ~p is full. Replacing it...~s~n", [?RED, Id, ?RESET]),
-            truck_loop(Id, Capacity, Capacity) % Reset truck to full capacity
+            truck_loop(Id, Capacity, Capacity)
     end.
+
 start() ->
     TruckPid1 = start_truck(1, 10), % Increased capacity for trucks
     ConveyorPid1 = start_conveyor(1, TruckPid1),
