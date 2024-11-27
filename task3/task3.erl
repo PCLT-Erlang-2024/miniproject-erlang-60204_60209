@@ -47,10 +47,10 @@ conveyor_loop(Id, TruckPid, Queue, IsPaused) ->
                       [?GREEN, Id, element(1, Package), element(2, Package), ?RESET]),
             conveyor_loop(Id, TruckPid, [Package | Queue], IsPaused);
         {pause_operation} -> % Pause operation during truck replacement
-            io:format("~sConveyor belt ~p: Pausing operation due to truck replacement.~s~n", [?GREEN, Id, ?RESET]),
+            io:format("~sConveyor belt ~p: Truck is being replaced. Pausing operation...~s~n", [?GREEN, Id, ?RESET]),
             conveyor_loop(Id, TruckPid, Queue, true);
         {resume_operation} -> % Resume operation after truck replacement
-            io:format("~sConveyor belt ~p: Resuming operation after truck replacement.~s~n", [?GREEN, Id, ?RESET]),
+            io:format("~sConveyor belt ~p: Truck is replaced. Resuming operation...~s~n", [?GREEN, Id, ?RESET]),
             conveyor_loop(Id, TruckPid, Queue, false)
     after 2000 ->  % Periodically process the queue of packages
         if not IsPaused ->
@@ -74,10 +74,10 @@ truck_loop(Id, Capacity, Remaining) ->
             % Check if the truck is now full
             case Remaining - Size of
                 0 -> % Truck is full after this package
-                    io:format("~sTruck ~p is full. Replacing it...~s~n", [?RED, Id, ?RESET]),
+                    io:format("~sTruck ~p: Is full. Replacing it...~s~n", [?RED, Id, ?RESET]),
                     ConveyorPid ! {pause_operation}, % Notify conveyor to pause
                     RandomDelay = rand:uniform(3) * 1000, % Random delay between 1 and 3 seconds
-                    io:format("~sTruck ~p is being replaced. Sleeping for ~p milliseconds.~s~n", 
+                    io:format("~sTruck ~p: Is being replaced. Sleeping for ~p milliseconds.~s~n", 
                               [?RED, Id, RandomDelay, ?RESET]),
                     timer:sleep(RandomDelay),
                     ConveyorPid ! {resume_operation}, % Notify conveyor to resume
@@ -85,14 +85,15 @@ truck_loop(Id, Capacity, Remaining) ->
                 _ -> % Truck still has capacity
                     truck_loop(Id, Capacity, Remaining - Size)
             end;
+
         {load_package, {PackageId, Size}, ConveyorPid} when Size > Remaining -> % Package too large for the truck
-            io:format("~sTruck ~p rejected package ~p (size: ~p). Not enough capacity.~s~n", 
+            io:format("~sTruck ~p: Rejected package ~p (size: ~p). Not enough capacity.~s~n", 
                       [?RED, Id, PackageId, Size, ?RESET]),
             ConveyorPid ! {package_rejected, {PackageId, Size}}, % Send package back to the Belt
-            io:format("~sTruck ~p is full. Replacing it...~s~n", [?RED, Id, ?RESET]),
+            io:format("~sTruck ~p: Out of capacity. Replacing it...~s~n", [?RED, Id, ?RESET]),
             ConveyorPid ! {pause_operation}, % Notify conveyor to pause
             RandomDelay = rand:uniform(3) * 1000, % Random delay between 1 and 3 seconds
-            io:format("~sTruck ~p is being replaced. Sleeping for ~p milliseconds.~s~n", 
+            io:format("~sTruck ~p: Is being replaced. Sleeping for ~p milliseconds.~s~n", 
                       [?RED, Id, RandomDelay, ?RESET]),
             timer:sleep(RandomDelay),
             ConveyorPid ! {resume_operation}, % Notify conveyor to resume
