@@ -12,7 +12,7 @@ start_generator(ConveyorPids, Interval) ->
 
 % Package generator loop
 generator_loop(ConveyorPids, Interval) ->
-    PackageSize = rand:uniform(3), % Generate a package size between 1 and 5
+    PackageSize = rand:uniform(3), % Generate a package size between 1 and 3
     Package = {erlang:unique_integer([positive]), PackageSize},
     % Distribute the package to a random conveyor belt
     RandomConveyor = lists:nth(rand:uniform(length(ConveyorPids)), ConveyorPids),
